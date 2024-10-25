@@ -473,10 +473,9 @@ pub fn derive_zeroable(input: TokenStream) -> TokenStream {
 /// ```
 ///
 /// # Argument types
-///   - `bitflag_name`: ASCII string literal of the Ident of the BitFlag struct to generate (required).
-///   - `bitglag_type`: type of the bits which implements the Add trait (required).
-///   - `bitflag_groups`: json key-value format. Keys are group names, value are a nested json of
-///   flag_name:flag_value pairs. Grouping flags in a group means they are mutually exclusive.
+///   - `name`: ASCII string literal of the Ident of the BitFlag struct to generate (required).
+///   - `type`: type of the bits which implements the Add trait (required).
+///   - `groups`: json key-value format. Keys are group names, value are a nested json of flag_name:flag_value pairs. Grouping flags in a group means they are mutually exclusive.
 ///   
 #[proc_macro]
 pub fn bitflag(ts: TokenStream) -> TokenStream {

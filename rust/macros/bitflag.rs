@@ -68,9 +68,8 @@ fn expect_incompat_group(it: &mut token_stream::IntoIter) -> Vec<(String, String
 
         assert_eq!(expect_punct(&mut it), ':');
 
-        // let value = expect_ident(&mut it);
         let value = try_ident(&mut it)
-            .expect(format!("flag value for flag \"{}\": Expected Ident or end", key).as_str());
+            .unwrap_or_else(|| panic!("flag value for flag \"{}\": Expected Ident or end", key));
         values.push((key.clone(), value));
 
         assert_eq!(expect_punct(&mut it), ',');
@@ -88,8 +87,7 @@ struct BitflagInfo {
 
 impl BitflagInfo {
     fn parse(it: &mut token_stream::IntoIter) -> Self {
-        //    let tsc = ts.clone();
-        let mut it = it.into_iter();
+        let it = it.into_iter();
 
         let mut info: BitflagInfo = Default::default();
 
@@ -127,7 +125,7 @@ impl BitflagInfo {
             seen_keys.push(key);
         }
 
-        expect_end(&mut it);
+        expect_end(it);
 
         for key in REQUIRED_KEYS {
             if !seen_keys.iter().any(|e| e == key) {

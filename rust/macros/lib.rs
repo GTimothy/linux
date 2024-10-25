@@ -8,6 +8,7 @@
 
 #[macro_use]
 mod quote;
+mod bitflag;
 mod concat_idents;
 mod helpers;
 mod module;
@@ -429,4 +430,55 @@ pub fn paste(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(Zeroable)]
 pub fn derive_zeroable(input: TokenStream) -> TokenStream {
     zeroable::derive(input)
+}
+
+/// Declares a BitFlag struc and its BitFlagBuilder.
+///
+/// All arguments are required
+///
+/// # Examples
+///
+///
+///
+///  ```ignore
+/// use crate::macros::bitflag;
+/// const BIG: u32 = 0;
+/// const SMALL: u32 = 1;
+///
+/// const RED: u32 = 2;
+/// const GREEN: u32 = 4;
+/// const BLUE: u32 = 6;
+///
+/// bitflag! [
+///     name: CustomBitFlag,
+///     type: u32,
+///     groups_of_incompatible: {
+///         Size:{
+///             big: BIG,
+///             small: SMALL,
+///         },
+///         Colour:{
+///             red:RED,
+///             green:GREEN,
+///             blue:BLUE,
+///         },
+///     },
+/// ];
+///
+///
+/// let flag_builder = CustomBitFlag::builder();
+/// let flag = flag_builder.with_big().with_green().build();
+/// let flag2 = CustomBitFlag::builder().with_big().with_green().build();
+///
+/// ```
+///
+/// # Argument types
+///   - `bitflag_name`: ASCII string literal of the Ident of the BitFlag struct to generate (required).
+///   - `bitglag_type`: type of the bits which implements the Add trait (required).
+///   - `bitflag_groups`: json key-value format. Keys are group names, value are a nested json of
+///   flag_name:flag_value pairs. Grouping flags in a group means they are mutually exclusive.
+///   
+#[proc_macro]
+pub fn bitflag(ts: TokenStream) -> TokenStream {
+    bitflag::bitflag_and_builder(ts)
 }

@@ -257,7 +257,11 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
     format!(
         "
     #[derive(Debug)]
-    pub struct {name}({type});
+    pub struct {name};
+    impl BitFlag for {name} {{
+        type Bits = {type};
+    }}
+
     impl {name} {{
         pub fn builder() -> {name}Builder<{missing_generics}> {{
             {name}Builder {{
@@ -280,13 +284,12 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
 
     {missing_impls}
 
-    impl {name}Builder<{valid_generics}> {{
-        pub fn build(self) -> {name} {{
-            {name}(self.flags.iter().flatten().sum::<{type}>())
+
+    impl ConstrainedFlagBuilder<{name}> for {name}Builder<{valid_generics}> {{
+        fn build(self) -> ConstrainedFlag<{name}> {{
+            ConstrainedFlag::<{name}>(self.flags.iter().flatten().sum::<{type}>())
         }}
     }}
-
-
 ",
         type=info.bitflag_type,
         missing_generics = missing_generics.join(", "),

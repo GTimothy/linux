@@ -7,13 +7,32 @@
 #[doc(inline)]
 pub use crate::macros::bitflag;
 
-/// A marker type to use as part of the BitflagBuilder typestate. It indicates that part of the build configuration is missing.
+/// A trait associating a bit type to a flag type. The Flag type will be created in the macro
+/// (name:<Flag> field).
+pub trait BitFlag {
+    /// The bit type, usually u8 or u32
+    type Bits;
+}
+
+/// A BitFlag's bits' wrapper with build constraints.
+pub struct ConstrainedFlag<T: BitFlag>(T::Bits);
+
+/// A constrained flag's builder implements a build function once it reaches a valid state.
+pub trait ConstrainedFlagBuilder<T: BitFlag> {
+    /// the build function implemented by the builder once it reaches a completely valid state.
+    /// This function is not implemented by the builder in any invalid state.
+    fn build(self) -> ConstrainedFlag<T>;
+}
+
+/// A marker type to use as part of the builder typestate. It indicates that part of the
+/// build configuration is missing.
 #[derive(Debug)]
 pub struct Missing<Part> {
     t: core::marker::PhantomData<Part>,
 }
 
-/// A marker type to use as part of the BitflagBuilder typestate. It indicates that part of the build configuration is valid.
+/// A marker type to use as part of the builder typestate. It indicates that part of the
+/// build configuration is valid.
 #[derive(Debug)]
 pub struct Valid<Part> {
     t: core::marker::PhantomData<Part>,

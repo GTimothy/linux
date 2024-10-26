@@ -160,7 +160,7 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
     let missing_generics: Vec<String> = info
         .bitflag_groups
         .iter()
-        .map(|(group_name, _group)| format!("Missing<{group_name}>"))
+        .map(|(group_name, _group)| format!("crate::bitflag::Missing<{group_name}>"))
         .collect();
 
     fn struct_from_group((group_name, _group): &(String, Vec<(String, String)>)) -> String {
@@ -186,9 +186,9 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
             let mut left_generics = generics.clone();
             left_generics.remove(k);
             let mut right_generics = generics.clone();
-            right_generics[k] = format!("Missing<{group_name}>");
+            right_generics[k] = format!("crate::bitflag::Missing<{group_name}>");
             let mut right_generics_method = generics.clone();
-            right_generics_method[k] = format!("Valid<{group_name}>");
+            right_generics_method[k] = format!("crate::bitflag::Valid<{group_name}>");
 
             let withs = group.iter().map(|(key, _value)| {
                 format!(
@@ -223,7 +223,7 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
             let mut left_generics = generics.clone();
             left_generics.remove(k);
             let mut right_generics = generics.clone();
-            right_generics[k] = format!("Valid<{group_name}>");
+            right_generics[k] = format!("crate::bitflag::Valid<{group_name}>");
 
             let setters = group.iter().map(|(key, value)| {
                 format!(
@@ -249,7 +249,7 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
     let valid_generics: Vec<String> = info
         .bitflag_groups
         .iter()
-        .map(|(group_name, _group)| format!("Valid<{group_name}>"))
+        .map(|(group_name, _group)| format!("crate::bitflag::Valid<{group_name}>"))
         .collect();
     // panic!(
     //     "{:?}\n\n{}",
@@ -272,16 +272,6 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
     pub struct {name}Builder<{generics}> {{
         flags: [Option<{type}>; {n}],
         t: core::marker::PhantomData<({generics})>,
-    }}
-
-    #[derive(Debug)]
-    pub struct Missing<T> {{
-        t: core::marker::PhantomData<T>,
-    }}
-
-    #[derive(Debug)]
-    pub struct Valid<T> {{
-        t: core::marker::PhantomData<T>,
     }}
 
     {groups_as_structs}

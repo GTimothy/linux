@@ -177,15 +177,12 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
         .iter()
         .map(struct_from_group)
         .collect::<Vec<String>>();
-    // .concat();
 
     let missing_impls: Vec<String> = info
         .bitflag_groups
         .iter()
         .enumerate()
         .map(|(k, (group_name, group))| {
-            //: (k:usize, &(String, Vec<(String, String)>))
-
             let mut left_generics = generics.clone();
             left_generics.remove(k);
             let mut right_generics = generics.clone();
@@ -223,8 +220,6 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
         .iter()
         .enumerate()
         .map(|(k, (group_name, group))| {
-            //: (k:usize, &(String, Vec<(String, String)>))
-
             let mut left_generics = generics.clone();
             left_generics.remove(k);
             let mut right_generics = generics.clone();

@@ -18,3 +18,37 @@ pub struct Missing<Part> {
 pub struct Valid<Part> {
     t: core::marker::PhantomData<Part>,
 }
+
+#[test]
+#[allow(unused_variables)]
+#[allow(dead_code)]
+fn simple_size_colour_bitflag() {
+    use crate::macros::bitflag;
+
+    const BIG: u32 = 0u32;
+    const SMALL: u32 = 1u32;
+
+    const RED: u32 = 2u32;
+    const GREEN: u32 = 4u32;
+    const BLUE: u32 = 7u32;
+
+    bitflag! [
+        name: CustomBitFlag,
+        type: u32,
+        groups_of_incompatible: {
+            Size:{
+                big: BIG,
+                small: SMALL,
+            },
+            Colour:{
+                red:RED,
+                green:GREEN,
+                blue:BLUE,
+            },
+        },
+    ];
+
+    let flag_builder = CustomBitFlag::builder();
+    let flag = flag_builder.with_big().with_red().build();
+    assert_eq!(flag.0, BIG | RED);
+}

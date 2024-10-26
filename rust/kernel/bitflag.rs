@@ -42,7 +42,7 @@ pub struct Valid<Part> {
 #[allow(unused_variables)]
 #[allow(dead_code)]
 fn simple_size_colour_bitflag() {
-    use crate::macros::bitflag;
+    use crate::bitflag::{bitflag, ConstrainedFlag};
 
     const BIG: u32 = 0u32;
     const SMALL: u32 = 1u32;
@@ -67,7 +67,7 @@ fn simple_size_colour_bitflag() {
         },
     ];
 
-    let flag_builder = CustomBitFlag::builder();
+    let flag_builder = ConstrainedFlag::<CustomBitFlag>::builder();
     let flag = flag_builder.with_big().with_red().build();
     assert_eq!(flag.0, BIG | RED);
 }

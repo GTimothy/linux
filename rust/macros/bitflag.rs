@@ -262,7 +262,7 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
         type Bits = {type};
     }}
 
-    impl {name} {{
+    impl crate::bitflag::ConstrainedFlag::<{name}> {{
         pub fn builder() -> {name}Builder<{missing_generics}> {{
             {name}Builder {{
                 flags: Default::default(),
@@ -285,9 +285,9 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
     {missing_impls}
 
 
-    impl ConstrainedFlagBuilder<{name}> for {name}Builder<{valid_generics}> {{
-        fn build(self) -> ConstrainedFlag<{name}> {{
-            ConstrainedFlag::<{name}>(self.flags.iter().flatten().sum::<{type}>())
+    impl crate::bitflag::ConstrainedFlagBuilder<{name}> for {name}Builder<{valid_generics}> {{
+        fn build(self) -> crate::bitflag::ConstrainedFlag<{name}> {{
+            crate::bitflag::ConstrainedFlag::<{name}>(self.flags.iter().flatten().sum::<{type}>())
         }}
     }}
 ",

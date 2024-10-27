@@ -304,7 +304,7 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
     //     info,
     format!(
         "
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub struct {name}({type});
     impl BitFlag for {name} {{
         type Bits = {type};

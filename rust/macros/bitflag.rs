@@ -251,18 +251,70 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
         .iter()
         .map(|(group_name, _group)| format!("crate::bitflag::Valid<{group_name}>"))
         .collect();
+
+    let try_from_inner = info
+        .bitflag_groups
+        .iter()
+        .map(|(_group_name, group)| {
+            format!(
+                "
+            matched = false;
+
+            for flag in [{}] {{
+                if (flag & to_process) == flag {{
+                    matched = true;
+                    to_process -= flag;
+                    if flag > 0 {{
+                        break;
+                    }}
+                }}
+            }}
+            if !matched {{
+                return Err(value);
+            }}",
+                group
+                    .iter()
+                    .map(|(_k, v)| v.clone())
+                    .collect::<Vec<String>>()
+                    .join(",")
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let try_from_impl = format!(
+        "impl TryFrom<<{name} as BitFlag>::Bits> for {name} {{
+        type Error = <{name} as BitFlag>::Bits;
+
+        fn try_from(value: <{name} as BitFlag>::Bits) -> Result<Self, Self::Error> {{
+            let mut to_process = value.clone();
+
+            let mut {}
+
+            if to_process == 0 {{
+                return Ok(Self(value));
+            }}
+            return Err(value)
+        }}
+    }}",
+        try_from_inner
+    );
     // panic!(
     //     "{:?}\n\n{}",
     //     info,
     format!(
         "
     #[derive(Debug)]
-    pub struct {name};
+    pub struct {name}({type});
     impl BitFlag for {name} {{
         type Bits = {type};
+
+        fn bits(&self) -> Self::Bits {{
+            self.0
+        }}
     }}
 
-    impl crate::bitflag::ConstrainedFlag::<{name}> {{
+    impl {name} {{
         pub fn builder() -> {name}Builder<{missing_generics}> {{
             {name}Builder {{
                 flags: Default::default(),
@@ -284,10 +336,11 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
 
     {missing_impls}
 
+    {try_from_impl}
 
     impl crate::bitflag::ConstrainedFlagBuilder<{name}> for {name}Builder<{valid_generics}> {{
-        fn build(self) -> crate::bitflag::ConstrainedFlag<{name}> {{
-            crate::bitflag::ConstrainedFlag::<{name}>(self.flags.iter().flatten().sum::<{type}>())
+        fn build(self) -> {name} {{
+            {name}(self.flags.iter().flatten().sum::<{type}>())
         }}
     }}
 ",

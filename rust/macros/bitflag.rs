@@ -34,7 +34,7 @@ fn expect_incompat_groups(it: &mut token_stream::IntoIter) -> Vec<(String, Vec<(
         );
 
         let value = expect_incompat_group(&mut it);
-        values.push((key.clone(), value));
+        values.push((key.clone(), value.clone()));
 
         assert_eq!(
             try_punct(&mut it),
@@ -82,12 +82,49 @@ fn expect_incompat_group(it: &mut token_stream::IntoIter) -> Vec<(String, String
             key
         );
 
+        let mut value = "".to_string();
+        let current_value = value.clone();
+        let mut path_test = |mut it: &mut token_stream::IntoIter| match try_punct(&mut it) {
+            Some(',') => None,
+            Some(':') => match try_punct(&mut it) {
+                Some(':') => {
+                    let next_val = try_ident(&mut it).unwrap_or_else(|| {
+                        panic!(
+                            "flag value for flag \"{}\": Expected Ident as part of path",
+                            key
+                        )
+                    });
+                    Some(next_val)
+                }
+                other => panic!("expected two colons, got only one"),
+            },
+            _ => panic!(
+                "after {}, expected either a colon path or a comma",
+                current_value
+            ),
+        };
 
-        let value = try_ident(&mut it)
-            .unwrap_or_else(|| panic!("flag value for flag \"{}\": Expected Ident or end", key));
+        match it.next() {
+            Some(TokenTree::Ident(ident)) => {
+                value = ident.to_string();
+                while let Some(next_path_val) = path_test(&mut it) {
+                    value.push_str("::");
+                    value.push_str(next_path_val.as_str());
+                }
+            }
+            Some(TokenTree::Literal(litteral)) => {
+                value = litteral.to_string();
+                assert_eq!(
+                    try_punct(&mut it),
+                    Some(','),
+                    "after key {}, expected ','",
+                    key);
+            },
+            other => panic!("flag value for flag \"{}\": Expected Ident, Ident with path, or litteral, instead got: {other:?}", key)
+        }
+
         values.push((key.clone(), value));
 
-        assert_eq!(expect_punct(&mut it), ',');
         seen_keys.push(key);
     }
     values

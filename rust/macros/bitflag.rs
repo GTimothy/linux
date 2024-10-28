@@ -84,11 +84,11 @@ fn expect_incompat_group(it: &mut token_stream::IntoIter) -> Vec<(String, String
 
         let mut value = "".to_string();
         let current_value = value.clone();
-        let mut path_test = |mut it: &mut token_stream::IntoIter| match try_punct(&mut it) {
+        let path_test = |it: &mut token_stream::IntoIter| match try_punct(it) {
             Some(',') => None,
-            Some(':') => match try_punct(&mut it) {
+            Some(':') => match try_punct(it) {
                 Some(':') => {
-                    let next_val = try_ident(&mut it).unwrap_or_else(|| {
+                    let next_val = try_ident(it).unwrap_or_else(|| {
                         panic!(
                             "flag value for flag \"{}\": Expected Ident as part of path",
                             key
@@ -96,7 +96,7 @@ fn expect_incompat_group(it: &mut token_stream::IntoIter) -> Vec<(String, String
                     });
                     Some(next_val)
                 }
-                other => panic!("expected two colons, got only one"),
+                _ => panic!("expected two colons, got only one"),
             },
             _ => panic!(
                 "after {}, expected either a colon path or a comma",

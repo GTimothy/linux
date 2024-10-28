@@ -17,23 +17,6 @@ pub(crate) fn try_ident(it: &mut token_stream::IntoIter) -> Option<String> {
     }
 }
 
-// pub(crate) fn try_ident_with_path(it: &mut token_stream::IntoIter) -> Option<String> {
-//     if let Some(TokenTree::Ident(ident)) = it.next() {
-//         if let Some(TokenTree::Punctit.peek()
-//         Some(ident.to_string())
-//     } else {
-//         None
-//     }
-// }
-//
-// pub(crate) fn try_peek_doublecolon(it: &mut token_stream::IntoIter) -> char {
-//     if let TokenTree::Punct(punct) = it.next().expect("Reached end of token stream for Punct") {
-//         punct.as_char()
-//     } else {
-//         panic!("Expected Punct");
-//     }
-// }
-
 pub(crate) fn try_literal(it: &mut token_stream::IntoIter) -> Option<String> {
     if let Some(TokenTree::Literal(literal)) = it.next() {
         Some(literal.to_string())

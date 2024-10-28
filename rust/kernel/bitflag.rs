@@ -80,3 +80,62 @@ fn simple_size_colour_bitflag() {
         "Small Green should succeed"
     );
 }
+
+#[test]
+fn hrtimer_bitflag() {
+    pub(crate) mod bindings {
+        pub(crate) const HRTIMER_MODE_ABS: u8 = 0x00;
+        pub(crate) const HRTIMER_MODE_REL: u8 = 0x01;
+        pub(crate) const HRTIMER_MODE_PINNED: u8 = 0x02;
+        pub(crate) const HRTIMER_MODE_SOFT: u8 = 0x04;
+        pub(crate) const HRTIMER_MODE_HARD: u8 = 0x08;
+    }
+
+    use bindings::HRTIMER_MODE_HARD;
+
+    bitflag! [
+        name: TimerMode,
+        type: u8,
+        groups_of_incompatible: {
+            AbsRel:{
+            absolute: bindings::HRTIMER_MODE_ABS,
+            relative: bindings::HRTIMER_MODE_REL,
+            },
+            Pin:{
+            pinned: bindings::HRTIMER_MODE_PINNED,
+            unpinned: 0, // pinned is optionnal
+            },
+            SoftHard:{
+            soft: bindings::HRTIMER_MODE_SOFT, //with path
+            hard: HRTIMER_MODE_HARD, //without path
+        },
+        },
+    ];
+
+    use bindings::{HRTIMER_MODE_ABS, HRTIMER_MODE_PINNED, HRTIMER_MODE_SOFT};
+    let flag_builder = TimerMode::builder();
+    let flag = flag_builder
+        .with_absolute()
+        .with_pinned()
+        .with_soft()
+        .build();
+    assert_eq!(
+        flag.bits(), // <TimerMode as BitFlag>::bits(&flag),
+        bindings::HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT
+    );
+
+    let res: Result<TimerMode, u8> =
+        (HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD).try_into();
+    assert_eq!(
+        res,
+        Err(HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD),
+        "HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD are incompatible, this should fail"
+    );
+
+    let res: Result<TimerMode, u8> = (HRTIMER_MODE_ABS).try_into();
+    assert_eq!(
+        res,
+        Err(HRTIMER_MODE_ABS),
+        "we need to specify whether pinned or not, and whether soft or hard, this should fail"
+    );
+}

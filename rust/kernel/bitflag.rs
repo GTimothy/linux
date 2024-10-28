@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0
 
-// Copyright (C) 2024 Google LLC.
-
 //! A constrained Bitflag wrapper with its associated builder implementation as a macro.
 
 #[doc(inline)]

@@ -26,12 +26,22 @@ fn expect_incompat_groups(it: &mut token_stream::IntoIter) -> Vec<(String, Vec<(
             );
         }
 
-        assert_eq!(expect_punct(&mut it), ':');
+        assert_eq!(
+            try_punct(&mut it),
+            Some(':'),
+            "after key {}, expected ':'",
+            key
+        );
 
         let value = expect_incompat_group(&mut it);
         values.push((key.clone(), value));
 
-        assert_eq!(expect_punct(&mut it), ',');
+        assert_eq!(
+            try_punct(&mut it),
+            Some(','),
+            "after value {:?}, expected ':'",
+            value
+        );
         seen_keys.push(key);
     }
     values
@@ -65,8 +75,13 @@ fn expect_incompat_group(it: &mut token_stream::IntoIter) -> Vec<(String, String
                 key
             );
         }
+        assert_eq!(
+            try_punct(&mut it),
+            Some(':'),
+            "after key {}, expected ':'",
+            key
+        );
 
-        assert_eq!(expect_punct(&mut it), ':');
 
         let value = try_ident(&mut it)
             .unwrap_or_else(|| panic!("flag value for flag \"{}\": Expected Ident or end", key));
@@ -120,7 +135,12 @@ impl BitflagInfo {
                 ),
             }
 
-            assert_eq!(expect_punct(it), ',');
+            assert_eq!(
+                try_punct(it),
+                Some(','),
+                "expected comma after key-value pair {}:...",
+                key.clone()
+            );
 
             seen_keys.push(key);
         }

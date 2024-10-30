@@ -3,6 +3,7 @@
 use crate::helpers::*;
 use proc_macro::{token_stream, Delimiter, TokenStream, TokenTree};
 
+/// parse the groups_of_incompatible field passed to the [crate::bitflag] macro
 fn expect_incompat_groups(it: &mut token_stream::IntoIter) -> Vec<(String, Vec<(String, String)>)> {
     let group = expect_group(it);
     assert_eq!(group.delimiter(), Delimiter::Brace);
@@ -47,6 +48,7 @@ fn expect_incompat_groups(it: &mut token_stream::IntoIter) -> Vec<(String, Vec<(
     values
 }
 
+/// parse a specific group from the set of groups in groups_of_incompatible. This is called in [expect_incompat_groups]
 fn expect_incompat_group(it: &mut token_stream::IntoIter) -> Vec<(String, String)> {
     let group = expect_group(it);
     assert_eq!(group.delimiter(), Delimiter::Brace);
@@ -207,7 +209,8 @@ impl BitflagInfo {
         info
     }
 }
-
+/// the bitflag macro. Parses the token stream into a BitflagInfo struct, then uses it to generate
+/// the appropriate Rust code
 pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
     let mut it = ts.into_iter();
     let info = BitflagInfo::parse(&mut it);

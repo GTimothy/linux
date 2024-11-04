@@ -4,6 +4,7 @@
 
 #[doc(inline)]
 pub use crate::macros::bitflag;
+pub use crate::macros::bitflag_options;
 
 /// A trait associating a bit type to a flag type. The Flag type will be created in the macro
 /// (name:<Flag> field).
@@ -135,5 +136,71 @@ fn hrtimer_bitflag() {
         res,
         Err(HRTIMER_MODE_ABS),
         "we need to specify whether pinned or not, and whether soft or hard, this should fail"
+    );
+}
+
+#[test]
+fn hrtimer_bitflag_options() {
+    pub(crate) mod bindings {
+        pub(crate) const HRTIMER_MODE_ABS: u8 = 0x00;
+        pub(crate) const HRTIMER_MODE_REL: u8 = 0x01;
+        pub(crate) const HRTIMER_MODE_PINNED: u8 = 0x02;
+        pub(crate) const HRTIMER_MODE_SOFT: u8 = 0x04;
+        pub(crate) const HRTIMER_MODE_HARD: u8 = 0x08;
+    }
+
+    use bindings::HRTIMER_MODE_HARD;
+
+    bitflag_options! [
+    name: TimerMode,
+    type: u8,
+    options: {
+            relative: bindings::HRTIMER_MODE_REL : bindings::HRTIMER_MODE_ABS,
+            pinned: bindings::HRTIMER_MODE_PINNED : 0,
+            hard: HRTIMER_MODE_HARD : bindings::HRTIMER_MODE_SOFT,
+    },
+    ];
+
+    use bindings::{HRTIMER_MODE_ABS, HRTIMER_MODE_PINNED, HRTIMER_MODE_REL, HRTIMER_MODE_SOFT};
+    let tmode: TimerMode = TimerMode::try_from(bindings::HRTIMER_MODE_SOFT)
+        .expect("other settings have 0bit modes so they should all match");
+
+    assert_eq!(tmode, TimerMode::default().hard(false));
+    assert_eq!(tmode, TimerMode::default());
+
+    assert_eq!(
+        TimerMode::default().hard(true).pinned(true).relative(true),
+        TimerMode::try_from(HRTIMER_MODE_HARD | HRTIMER_MODE_PINNED | HRTIMER_MODE_REL)
+            .expect("this is a valid combination of flags")
+    );
+
+    assert_eq!(
+        TimerMode::default()
+            .hard(false)
+            .pinned(true)
+            .relative(false),
+        TimerMode::try_from(HRTIMER_MODE_SOFT | HRTIMER_MODE_PINNED | HRTIMER_MODE_ABS)
+            .expect("this is a valid combination of flags")
+    );
+
+    let flag = TimerMode::default().pinned(true).hard(false);
+    assert_eq!(
+        flag.bits(), // <TimerMode as BitFlag>::bits(&flag),
+        bindings::HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT
+    );
+
+    let res: Result<TimerMode, u8> =
+        (HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD).try_into();
+    assert_eq!(
+        res,
+        Err(HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD),
+        "HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD are incompatible, this should fail"
+    );
+
+    let res: Result<TimerMode, u8> = (HRTIMER_MODE_ABS).try_into();
+    assert_eq!(
+        res,
+        Err(HRTIMER_MODE_ABS),
+        "Although unpinned matches because it has a flag of 0, we still need to specify whether whether soft or hard"
     );
 }

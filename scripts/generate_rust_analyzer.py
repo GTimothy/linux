@@ -65,6 +65,13 @@ def generate_crates(srctree, objtree, sysroot_src, external_src, cfgs):
     )
 
     append_crate(
+        "uapi",
+        srctree / "rust" / "uapi" / "lib.rs",
+        ["core"],
+    )
+    crates[-1]["env"]["OBJTREE"] = str(objtree.resolve(True))
+
+    append_crate(
         "macros",
         srctree / "rust" / "macros" / "lib.rs",
         [],
@@ -89,7 +96,7 @@ def generate_crates(srctree, objtree, sysroot_src, external_src, cfgs):
     append_crate(
         "kernel",
         srctree / "rust" / "kernel" / "lib.rs",
-        ["core", "macros", "build_error", "bindings"],
+        ["core", "macros", "build_error", "bindings", "uapi"],
         cfg=cfg,
     )
     crates[-1]["source"] = {

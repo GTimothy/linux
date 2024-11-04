@@ -311,7 +311,6 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
         .iter()
         .map(|(group_name, _group)| format!("crate::bitflag::Valid<{group_name}>"))
         .collect();
-
     let try_from_inner = info
         .bitflag_groups
         .iter()
@@ -411,6 +410,308 @@ pub(crate) fn bitflag_and_builder(ts: TokenStream) -> TokenStream {
         valid_impls=valid_impls.join("\n"),
        missing_impls = missing_impls.join("\n"),
        valid_generics = valid_generics.join(", ")
+    )
+    // )
+    .parse()
+    .expect("Error parsing formatted string into token stream.")
+}
+
+#[derive(Debug, Default)]
+struct TrueBitflagInfo {
+    bitflag_name: String,
+    bitflag_type: String,
+    bitflag_options: Vec<(String, String, String)>,
+}
+
+/// parse a specific group from the set of groups in groups_of_incompatible. This is called in [expect_incompat_groups]
+fn expect_ternary_group(it: &mut token_stream::IntoIter) -> Vec<(String, String, String)> {
+    let group = expect_group(it);
+    assert_eq!(group.delimiter(), Delimiter::Brace);
+    let mut values = Vec::new();
+    let mut it = group.stream().into_iter();
+
+    let mut seen_keys: Vec<String> = Vec::new();
+    loop {
+        let mut key = match it.next() {
+            Some(TokenTree::Ident(ident)) => ident.to_string(),
+            Some(_) => panic!(
+                "flag name: Expected Ident or end. Last valid key was \"{:?}\"",
+                seen_keys.last()
+            ),
+            None => break,
+        };
+        if !key.is_ascii() {
+            panic!("\"{}\" is not an ASCII string", key);
+        } else {
+            key.make_ascii_lowercase();
+        }
+
+        if seen_keys.contains(&key) {
+            panic!(
+                "Duplicated key \"{}\". Keys can only be specified once.",
+                key
+            );
+        }
+        assert_eq!(
+            try_punct(&mut it),
+            Some(':'),
+            "after key {}, expected ':'",
+            key
+        );
+
+        let parse_ternary = |it: &mut token_stream::IntoIter| -> (String, String) {
+            let (mut value_true, mut value_false) = Default::default();
+            let mut end_loop = false;
+            let mut part: &mut String = &mut value_true;
+
+            for _i in 0..2 {
+                match it.next() {
+                    Some(TokenTree::Literal(literal)) => {
+                        part.push_str(&literal.to_string());
+                        if let Some(TokenTree::Punct(punct)) = it.next() {
+                            let p_char = punct.as_char();
+                            if end_loop {
+                                assert_eq!(p_char,',', "flag value for flag \"{key}\": Expected end of ternary comma ','");
+                            } else {
+                                assert_eq!(
+                                    p_char, ':',
+                                    "flag value for flag \"{key}\": Expected ternary operator ':'"
+                                );
+                                assert_eq!(punct.spacing(),proc_macro::Spacing::Alone, "flag value for flag \"{key}\": Expected well spaced ternary operator ' : '");
+                                end_loop = true;
+                                part = &mut value_false;
+                                continue;
+                            }
+                        }
+                    }
+
+                    Some(TokenTree::Ident(ident)) => {
+                        part.push_str(&ident.to_string());
+                        loop {
+                            if let Some(TokenTree::Punct(punct)) = it.next() {
+                                match punct.as_char() {
+                                    ',' => {
+                                        if end_loop {
+                                            break;
+                                        } else {
+                                            panic!("comma before end of ternary parsing");
+                                        }
+                                    }
+
+                                    ':' => {
+                                        if punct.spacing() == proc_macro::Spacing::Alone {
+                                            if end_loop {
+                                                panic!("unexpected lonely colon");
+                                            } else {
+                                                end_loop = true;
+
+                                                part = &mut value_false;
+
+                                                break;
+                                            }
+                                        } else {
+                                            assert_eq!(
+                                                Some(':'),
+                                                try_punct(it),
+                                                "Expected second colon as part of path"
+                                            );
+                                            let next_val = try_ident(it).unwrap_or_else(|| panic!("flag value for flag \"{key}\": Expected Ident as part of path"));
+                                            part.push_str("::");
+                                            part.push_str(&next_val);
+                                        }
+                                    }
+                                    _ => panic!("unhandled punction while parsing an ident path"),
+                                }
+                            } else {
+                                panic!("Error parsing an ident path");
+                            }
+                        }
+                    }
+                    _ => panic!("unexpected token when parsing ternary"),
+                }
+            }
+            (value_true, value_false)
+        };
+
+        let (value_true, value_false) = parse_ternary(&mut it);
+
+        values.push((key.clone(), value_true, value_false));
+
+        seen_keys.push(key);
+    }
+    values
+}
+
+impl TrueBitflagInfo {
+    fn parse(it: &mut token_stream::IntoIter) -> Self {
+        let it = it.into_iter();
+
+        let mut info: TrueBitflagInfo = Default::default();
+
+        const REQUIRED_KEYS: &[&str] = &["name", "type", "options"];
+        let mut seen_keys = Vec::new();
+
+        loop {
+            let key = match it.next() {
+                Some(TokenTree::Ident(ident)) => ident.to_string(),
+                Some(_) => panic!("Expected Ident or end"),
+                None => break,
+            };
+
+            if seen_keys.contains(&key) {
+                panic!(
+                    "Duplicated key \"{}\". Keys can only be specified once.",
+                    key
+                );
+            }
+
+            assert_eq!(expect_punct(it), ':');
+
+            match key.as_str() {
+                "type" => info.bitflag_type = try_ident(it).expect("type: expects an ident"),
+                "name" => info.bitflag_name = try_ident(it).expect("name: expects an ident"),
+                "options" => info.bitflag_options = expect_ternary_group(it),
+                _ => panic!(
+                    "Unknown key \"{}\". Valid top level keys are: {:?}.",
+                    key, REQUIRED_KEYS
+                ),
+            }
+
+            assert_eq!(
+                try_punct(it),
+                Some(','),
+                "expected comma after key-value pair {}:...",
+                key.clone()
+            );
+
+            seen_keys.push(key);
+        }
+
+        expect_end(it);
+
+        for key in REQUIRED_KEYS {
+            if !seen_keys.iter().any(|e| e == key) {
+                panic!("Missing required key \"{}\".", key);
+            }
+        }
+
+        let mut ordered_keys: Vec<&str> = Vec::new();
+        for key in REQUIRED_KEYS {
+            if seen_keys.iter().any(|e| e == key) {
+                ordered_keys.push(key);
+            }
+        }
+
+        if seen_keys != ordered_keys {
+            panic!(
+                "Keys are not ordered as expected. Order them like: {:?}.",
+                ordered_keys
+            );
+        }
+
+        info
+    }
+}
+
+/// the bitflag_options macro. Parses the token stream into a TrueBitflagInfo struct, then uses it to generate
+/// the appropriate Rust code.
+/// Invariant: The flags passed as input are all additive flags.
+pub(crate) fn bitflag_options(ts: TokenStream) -> TokenStream {
+    let mut it = ts.into_iter();
+    let info = TrueBitflagInfo::parse(&mut it);
+    let name = info.bitflag_name.clone();
+
+    let try_from_inner = info
+        .bitflag_options
+        .iter()
+        .map(|(_group_name, true_value, false_value)| {
+            format!(
+                "
+            matched = false;
+
+            for flag in [{true_value}, {false_value}] {{
+                if (flag & to_process) == flag {{
+                    matched = true;
+                    to_process -= flag;
+                    if flag > 0 {{
+                        break;
+                    }}
+                }}
+            }}
+            if !matched {{
+                return Err(value);
+            }}"
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    let try_from_impl = format!(
+        "impl TryFrom<<{name} as BitFlag>::Bits> for {name} {{
+        type Error = <{name} as BitFlag>::Bits;
+
+        fn try_from(value: <{name} as BitFlag>::Bits) -> Result<Self, Self::Error> {{
+            let mut to_process = value.clone();
+
+            let mut {}
+
+            if to_process == 0 {{
+                return Ok(Self(value));
+            }}
+            return Err(value)
+        }}
+    }}",
+        try_from_inner
+    );
+
+    let bool_functions: String = info
+        .bitflag_options
+        .iter()
+        .map(|(fn_name, true_value, false_value)| {
+            format!(
+                "
+        pub fn {fn_name}(mut self, {fn_name}:bool)->Self{{
+            if {fn_name}{{
+                self.0 = self.0 & !{false_value} | {true_value};
+            }}else{{
+                self.0 = self.0 & !{true_value} | {false_value};
+            }}
+            self
+        }}"
+            )
+        })
+        .collect::<Vec<String>>()
+        .join("\n");
+
+    // panic!(
+    //     "{:?}\n\n{}",
+    //     info,
+    format!(
+        "
+    #[derive(Debug, PartialEq)]
+    pub struct {name}({type});
+    impl BitFlag for {name} {{
+        type Bits = {type};
+
+        fn bits(&self) -> Self::Bits {{
+            self.0
+        }}
+    }}
+
+    impl {name} {{
+
+    {bool_functions}
+    }}
+
+    impl Default for TimerMode{{
+        fn default() -> Self {{
+            Self(0).relative(false).pinned(false).hard(false)
+        }}
+    }}
+
+    {try_from_impl}
+",
+        type=info.bitflag_type,
     )
     // )
     .parse()

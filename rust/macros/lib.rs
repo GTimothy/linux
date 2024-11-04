@@ -543,3 +543,7 @@ pub fn derive_zeroable(input: TokenStream) -> TokenStream {
 pub fn bitflag(ts: TokenStream) -> TokenStream {
     bitflag::bitflag_and_builder(ts)
 }
+#[proc_macro]
+pub fn bitflag_options(ts: TokenStream) -> TokenStream {
+    bitflag::bitflag_options(ts)
+}

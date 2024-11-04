@@ -25,6 +25,7 @@
 //! * <https://github.com/kennytm/qrcode-rust>
 //! * <https://github.com/erwanvivien/fast_qr>
 //! * <https://github.com/bjguillot/qr>
+#![no_std]
 
 use core::cmp;
 use kernel::str::CStr;

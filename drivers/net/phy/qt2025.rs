@@ -8,6 +8,7 @@
 //! and firmware can be downloaded on the EN-9320SFP+ support site.
 //!
 //! The QT2025 PHY integrates an Intel 8051 micro-controller.
+#![no_std]
 
 use kernel::c_str;
 use kernel::error::code;

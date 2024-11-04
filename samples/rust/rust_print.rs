@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
 //! Rust printing macros sample.
+#![no_std]
 
 use kernel::pr_cont;
 use kernel::prelude::*;

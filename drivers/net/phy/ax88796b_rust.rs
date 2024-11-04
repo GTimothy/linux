@@ -4,6 +4,7 @@
 //! Rust Asix PHYs driver
 //!
 //! C version of this driver: [`drivers/net/phy/ax88796b.c`](./ax88796b.c)
+#![no_std]
 use kernel::{
     c_str,
     net::phy::{self, reg::C22, DeviceId, Driver},

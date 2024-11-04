@@ -9,6 +9,7 @@
 //! - block size 4k
 //!
 //! The driver is not configurable.
+#![no_std]
 
 use kernel::{
     alloc::flags,

@@ -82,36 +82,31 @@ fn simple_size_colour_bitflag() {
 
 #[test]
 fn hrtimer_bitflag() {
-    pub(crate) mod bindings {
-        pub(crate) const HRTIMER_MODE_ABS: u8 = 0x00;
-        pub(crate) const HRTIMER_MODE_REL: u8 = 0x01;
-        pub(crate) const HRTIMER_MODE_PINNED: u8 = 0x02;
-        pub(crate) const HRTIMER_MODE_SOFT: u8 = 0x04;
-        pub(crate) const HRTIMER_MODE_HARD: u8 = 0x08;
-    }
-
-    use bindings::HRTIMER_MODE_HARD;
+    use bindings::hrtimer_mode_HRTIMER_MODE_HARD;
 
     bitflag! [
         name: TimerMode,
-        type: u8,
+        type: u32,
         groups_of_incompatible: {
             AbsRel:{
-            absolute: bindings::HRTIMER_MODE_ABS,
-            relative: bindings::HRTIMER_MODE_REL,
+            absolute: bindings::hrtimer_mode_HRTIMER_MODE_ABS,
+            relative: bindings::hrtimer_mode_HRTIMER_MODE_REL,
             },
             Pin:{
-            pinned: bindings::HRTIMER_MODE_PINNED,
+            pinned: bindings::hrtimer_mode_HRTIMER_MODE_PINNED,
             unpinned: 0, // pinned is optionnal
             },
             SoftHard:{
-            soft: bindings::HRTIMER_MODE_SOFT, //with path
-            hard: HRTIMER_MODE_HARD, //without path
+            soft: bindings::hrtimer_mode_HRTIMER_MODE_SOFT, //with path
+            hard: hrtimer_mode_HRTIMER_MODE_HARD, //without path
         },
         },
     ];
 
-    use bindings::{HRTIMER_MODE_ABS, HRTIMER_MODE_PINNED, HRTIMER_MODE_SOFT};
+    use bindings::{
+        hrtimer_mode_HRTIMER_MODE_ABS, hrtimer_mode_HRTIMER_MODE_PINNED,
+        hrtimer_mode_HRTIMER_MODE_SOFT,
+    };
     let flag_builder = TimerMode::builder();
     let flag = flag_builder
         .with_absolute()
@@ -120,49 +115,49 @@ fn hrtimer_bitflag() {
         .build();
     assert_eq!(
         flag.bits(), // <TimerMode as BitFlag>::bits(&flag),
-        bindings::HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT
+        bindings::hrtimer_mode_HRTIMER_MODE_ABS
+            | hrtimer_mode_HRTIMER_MODE_PINNED
+            | hrtimer_mode_HRTIMER_MODE_SOFT
     );
 
-    let res: Result<TimerMode, u8> =
-        (HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD).try_into();
+    let res: Result<TimerMode, u32> = (hrtimer_mode_HRTIMER_MODE_ABS
+        | hrtimer_mode_HRTIMER_MODE_PINNED
+        | hrtimer_mode_HRTIMER_MODE_SOFT
+        | hrtimer_mode_HRTIMER_MODE_HARD)
+        .try_into();
     assert_eq!(
         res,
-        Err(HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD),
-        "HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD are incompatible, this should fail"
+        Err(hrtimer_mode_HRTIMER_MODE_ABS | hrtimer_mode_HRTIMER_MODE_PINNED | hrtimer_mode_HRTIMER_MODE_SOFT | hrtimer_mode_HRTIMER_MODE_HARD),
+        "hrtimer_mode_HRTIMER_MODE_SOFT | hrtimer_mode_HRTIMER_MODE_HARD are incompatible, this should fail"
     );
 
-    let res: Result<TimerMode, u8> = (HRTIMER_MODE_ABS).try_into();
+    let res: Result<TimerMode, u32> = (hrtimer_mode_HRTIMER_MODE_ABS).try_into();
     assert_eq!(
         res,
-        Err(HRTIMER_MODE_ABS),
+        Err(hrtimer_mode_HRTIMER_MODE_ABS),
         "we need to specify whether pinned or not, and whether soft or hard, this should fail"
     );
 }
 
 #[test]
 fn hrtimer_bitflag_options() {
-    pub(crate) mod bindings {
-        pub(crate) const HRTIMER_MODE_ABS: u8 = 0x00;
-        pub(crate) const HRTIMER_MODE_REL: u8 = 0x01;
-        pub(crate) const HRTIMER_MODE_PINNED: u8 = 0x02;
-        pub(crate) const HRTIMER_MODE_SOFT: u8 = 0x04;
-        pub(crate) const HRTIMER_MODE_HARD: u8 = 0x08;
-    }
-
-    use bindings::HRTIMER_MODE_HARD;
+    use bindings::hrtimer_mode_HRTIMER_MODE_HARD;
 
     bitflag_options! [
     name: TimerMode,
-    type: u8,
+    type: u32,
     options: {
-            relative: bindings::HRTIMER_MODE_REL : bindings::HRTIMER_MODE_ABS,
-            pinned: bindings::HRTIMER_MODE_PINNED : 0,
-            hard: HRTIMER_MODE_HARD : bindings::HRTIMER_MODE_SOFT,
+            relative: bindings::hrtimer_mode_HRTIMER_MODE_REL : bindings::hrtimer_mode_HRTIMER_MODE_ABS,
+            pinned: bindings::hrtimer_mode_HRTIMER_MODE_PINNED : 0,
+            hard: hrtimer_mode_HRTIMER_MODE_HARD : bindings::hrtimer_mode_HRTIMER_MODE_SOFT,
     },
     ];
 
-    use bindings::{HRTIMER_MODE_ABS, HRTIMER_MODE_PINNED, HRTIMER_MODE_REL, HRTIMER_MODE_SOFT};
-    let tmode: TimerMode = TimerMode::try_from(bindings::HRTIMER_MODE_SOFT)
+    use bindings::{
+        hrtimer_mode_HRTIMER_MODE_ABS, hrtimer_mode_HRTIMER_MODE_PINNED,
+        hrtimer_mode_HRTIMER_MODE_REL, hrtimer_mode_HRTIMER_MODE_SOFT,
+    };
+    let tmode: TimerMode = TimerMode::try_from(bindings::hrtimer_mode_HRTIMER_MODE_SOFT)
         .expect("other settings have 0bit modes so they should all match");
 
     assert_eq!(tmode, TimerMode::default().hard(false));
@@ -170,8 +165,12 @@ fn hrtimer_bitflag_options() {
 
     assert_eq!(
         TimerMode::default().hard(true).pinned(true).relative(true),
-        TimerMode::try_from(HRTIMER_MODE_HARD | HRTIMER_MODE_PINNED | HRTIMER_MODE_REL)
-            .expect("this is a valid combination of flags")
+        TimerMode::try_from(
+            hrtimer_mode_HRTIMER_MODE_HARD
+                | hrtimer_mode_HRTIMER_MODE_PINNED
+                | hrtimer_mode_HRTIMER_MODE_REL
+        )
+        .expect("this is a valid combination of flags")
     );
 
     assert_eq!(
@@ -179,28 +178,37 @@ fn hrtimer_bitflag_options() {
             .hard(false)
             .pinned(true)
             .relative(false),
-        TimerMode::try_from(HRTIMER_MODE_SOFT | HRTIMER_MODE_PINNED | HRTIMER_MODE_ABS)
-            .expect("this is a valid combination of flags")
+        TimerMode::try_from(
+            hrtimer_mode_HRTIMER_MODE_SOFT
+                | hrtimer_mode_HRTIMER_MODE_PINNED
+                | hrtimer_mode_HRTIMER_MODE_ABS
+        )
+        .expect("this is a valid combination of flags")
     );
 
     let flag = TimerMode::default().pinned(true).hard(false);
     assert_eq!(
         flag.bits(), // <TimerMode as BitFlag>::bits(&flag),
-        bindings::HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT
+        bindings::hrtimer_mode_HRTIMER_MODE_ABS
+            | hrtimer_mode_HRTIMER_MODE_PINNED
+            | hrtimer_mode_HRTIMER_MODE_SOFT
     );
 
-    let res: Result<TimerMode, u8> =
-        (HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD).try_into();
+    let res: Result<TimerMode, u32> = (hrtimer_mode_HRTIMER_MODE_ABS
+        | hrtimer_mode_HRTIMER_MODE_PINNED
+        | hrtimer_mode_HRTIMER_MODE_SOFT
+        | hrtimer_mode_HRTIMER_MODE_HARD)
+        .try_into();
     assert_eq!(
         res,
-        Err(HRTIMER_MODE_ABS | HRTIMER_MODE_PINNED | HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD),
-        "HRTIMER_MODE_SOFT | HRTIMER_MODE_HARD are incompatible, this should fail"
+        Err(hrtimer_mode_HRTIMER_MODE_ABS | hrtimer_mode_HRTIMER_MODE_PINNED | hrtimer_mode_HRTIMER_MODE_SOFT | hrtimer_mode_HRTIMER_MODE_HARD),
+        "hrtimer_mode_HRTIMER_MODE_SOFT | hrtimer_mode_HRTIMER_MODE_HARD are incompatible, this should fail"
     );
 
-    let res: Result<TimerMode, u8> = (HRTIMER_MODE_ABS).try_into();
+    let res: Result<TimerMode, u32> = (hrtimer_mode_HRTIMER_MODE_ABS).try_into();
     assert_eq!(
         res,
-        Err(HRTIMER_MODE_ABS),
+        Err(hrtimer_mode_HRTIMER_MODE_ABS),
         "Although unpinned matches because it has a flag of 0, we still need to specify whether whether soft or hard"
     );
 }

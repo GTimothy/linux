@@ -37,6 +37,77 @@ pub struct Valid<Part> {
     t: core::marker::PhantomData<Part>,
 }
 
+macro_rules! bitflag_options_rules {{
+
+    name:$name:ident,
+    type:$t:ty,
+    options:[
+        $({name:$fn_name:ident, true: $true_bitval:expr, false: $false_bitval:expr}),+
+]} => {
+
+        #[derive(Debug, PartialEq)]
+        pub struct $name($t);
+
+        impl BitFlag for $name {
+        type Bits = $t;
+
+        fn bits(&self) -> Self::Bits {
+            self.0
+        }
+    }
+
+    impl $name {
+    $(pub fn $fn_name(mut self, $fn_name:bool)->Self{
+            if $fn_name{
+                self.0 = self.0 & !$false_bitval | $true_bitval;
+            }else{
+                self.0 = self.0 & !$true_bitval | $false_bitval;
+            }
+            self
+        })+
+
+
+    }
+
+    impl Default for $name{
+        fn default() -> Self {
+            Self(0)$(.$fn_name(false))+
+        }
+    }
+
+    impl TryFrom<<$name as BitFlag>::Bits> for $name {
+        type Error = <$name as BitFlag>::Bits;
+
+        fn try_from(value: <$name as BitFlag>::Bits) -> Result<Self, Self::Error> {
+            let mut to_process = value.clone();
+
+            let mut $(
+            matched = false;
+
+            for flag in [$true_bitval, $false_bitval] {
+                if (flag & to_process) == flag {
+                    matched = true;
+                    to_process -= flag;
+                    if flag > 0 {
+                        break;
+                    }
+                }
+            }
+            if !matched {
+                return Err(value);
+            })+
+
+
+            if to_process == 0 {
+                return Ok(Self(value));
+            }
+            return Err(value)
+        }
+    }
+
+    };
+}
+
 #[test]
 #[allow(unused_variables)]
 #[allow(dead_code)]

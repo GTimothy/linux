@@ -2036,6 +2036,12 @@ else
 	$(Q)$(MAKE) $(build)=rust $@
 endif
 
+
+PHONY += rust-cargo-setup
+rust-cargo-setup:
+	$(Q)MAKEFLAGS= $(srctree)/scripts/rust_project_to_cargo.py
+
+
 # Script to generate missing namespace dependencies
 # ---------------------------------------------------------------------------
 

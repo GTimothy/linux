@@ -86,9 +86,25 @@ def generate_crates(srctree, objtree, sysroot_src, external_src, cfgs):
     )
 
     append_crate(
+        "ffi",
+        srctree / "rust"/ "ffi.rs",
+        [],
+        cfg=cfg,
+    )
+    crates[-1]["env"]["OBJTREE"] = str(objtree.resolve(True))
+
+    append_crate(
+        "uapi",
+        srctree / "rust"/ "uapi" / "lib.rs",
+        ["ffi"],
+        cfg=cfg,
+    )
+    crates[-1]["env"]["OBJTREE"] = str(objtree.resolve(True))
+
+    append_crate(
         "bindings",
         srctree / "rust"/ "bindings" / "lib.rs",
-        ["core"],
+        ["core", "ffi"],
         cfg=cfg,
     )
     crates[-1]["env"]["OBJTREE"] = str(objtree.resolve(True))
@@ -96,7 +112,7 @@ def generate_crates(srctree, objtree, sysroot_src, external_src, cfgs):
     append_crate(
         "kernel",
         srctree / "rust" / "kernel" / "lib.rs",
-        ["core", "macros", "build_error", "bindings"],
+        ["core", "macros", "build_error", "bindings", "uapi", "ffi"],
         cfg=cfg,
     )
     crates[-1]["source"] = {
@@ -106,6 +122,7 @@ def generate_crates(srctree, objtree, sysroot_src, external_src, cfgs):
         ],
         "exclude_dirs": [],
     }
+    crates[-1]["env"]["OBJTREE"] = str(objtree.resolve(True))
 
     def is_root_crate(build_file, target):
         try:
